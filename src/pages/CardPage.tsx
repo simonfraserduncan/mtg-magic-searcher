@@ -1,20 +1,26 @@
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getCardById } from '@/services/searchService';
 import { Card } from '@/types';
 import Header from '@/components/Header';
 import CardDetail from '@/components/CardDetail';
+import { toast } from "@/components/ui/use-toast";
 
 const CardPage = () => {
   const { id } = useParams<{ id: string }>();
   const [card, setCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCard = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('Invalid card ID');
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       setError(null);
@@ -23,12 +29,23 @@ const CardPage = () => {
         const cardData = await getCardById(id);
         if (cardData) {
           setCard(cardData);
+          console.log("Card data loaded:", cardData);
         } else {
           setError('Card not found');
+          toast({
+            title: "Card not found",
+            description: "We couldn't find the card you're looking for.",
+            variant: "destructive"
+          });
         }
       } catch (err) {
         console.error('Error fetching card:', err);
         setError('Failed to load card data');
+        toast({
+          title: "Error loading card",
+          description: "There was a problem loading the card data. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -57,6 +74,12 @@ const CardPage = () => {
               </div>
               <h2 className="text-2xl font-medium mb-2">Error Loading Card</h2>
               <p className="text-muted-foreground">{error}</p>
+              <button 
+                onClick={() => navigate('/')}
+                className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Back to search
+              </button>
             </div>
           </div>
         ) : card ? (

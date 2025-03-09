@@ -294,10 +294,13 @@ export const getAutocomplete = async (term: string): Promise<AutocompleteResult>
 
 // Fetch a single card by ID
 export const getCardById = async (id: string): Promise<Card | null> => {
+  console.log(`Fetching card with ID: ${id}`);
+  
   // Simulate API delay
   await delay(500);
   
   const card = MOCK_CARDS.find(card => card.id === id);
+  console.log(`Card found:`, card);
   return card || null;
 };
 

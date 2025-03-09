@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card as CardType } from '@/types';
 import { useLazyImage, useInView } from '@/utils/animations';
 import { getSimilarCards } from '@/services/searchService';
+import { toast } from "@/components/ui/use-toast";
 
 interface CardDetailProps {
   card: CardType;
@@ -16,17 +17,27 @@ const CardDetail = ({ card }: CardDetailProps) => {
   const navigate = useNavigate();
   const { ref, isInView } = useInView({ threshold: 0.1 });
   const { src, isLoaded } = useLazyImage(
-    card.imageUrl || '/placeholder.svg',
+    card?.imageUrl || '/placeholder.svg',
     '/placeholder.svg'
   );
 
   useEffect(() => {
     const fetchSimilarCards = async () => {
       try {
+        if (!card.id) {
+          console.error('Card ID is missing');
+          return;
+        }
+        
         const cards = await getSimilarCards(card.id);
         setSimilarCards(cards);
       } catch (error) {
         console.error('Failed to load similar cards:', error);
+        toast({
+          title: "Couldn't load similar cards",
+          description: "We had trouble finding related cards.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -34,6 +45,24 @@ const CardDetail = ({ card }: CardDetailProps) => {
 
     fetchSimilarCards();
   }, [card.id]);
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `MTG Card: ${card.name}`,
+        text: `Check out this MTG card: ${card.name}`,
+        url: window.location.href,
+      }).catch((error) => {
+        console.error('Error sharing:', error);
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied",
+        description: "Card link copied to clipboard"
+      });
+    }
+  };
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
@@ -77,7 +106,10 @@ const CardDetail = ({ card }: CardDetailProps) => {
                 <span>Save</span>
               </button>
 
-              <button className="flex items-center space-x-1 py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors">
+              <button 
+                onClick={handleShare}
+                className="flex items-center space-x-1 py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors"
+              >
                 <Share2 className="w-5 h-5" />
                 <span>Share</span>
               </button>
@@ -91,7 +123,7 @@ const CardDetail = ({ card }: CardDetailProps) => {
               {card.colors?.map((color) => (
                 <span
                   key={color}
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${color.toLowerCase()}/10 text-${color.toLowerCase()} border border-${color.toLowerCase()}/20`}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent text-accent-foreground"
                 >
                   {color}
                 </span>
